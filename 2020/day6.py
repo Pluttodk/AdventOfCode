@@ -9,7 +9,7 @@ print(sum(map(lambda x: len(set(x.replace("\n", ""))), open("2020/data/day6.txt"
 print(sum(map(lambda x: len(set.intersection(*map(set, x.split("\n")))), open("2020/data/day6.txt").read().split("\n\n"))))
 
 #A concatenation of both
-print(list(map(sum, (zip(*map(lambda x: (len(set(x.replace("\n", ""))),len(set.intersection(*map(set, x.split("\n"))))), open("2020/data/day6.txt").read().split("\n\n")))))))
+print(*(map(sum, (zip(*map(lambda x: (len(set(x.replace("\n", ""))),len(set.intersection(*map(set, x.split("\n"))))), open("2020/data/day6.txt").read().split("\n\n")))))))
 
 
 # Old and not cool code :P 
