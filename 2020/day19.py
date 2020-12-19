@@ -14,7 +14,7 @@ criteria[11] = "42 31 | 42 11 31"
 def parse(index, lines, cache, looped):
     if index == 11 or index == 8:
         looped += 1
-    if looped > 20:
+    if looped > 10:
         return ""
     if index in cache:
         return cache[index]
