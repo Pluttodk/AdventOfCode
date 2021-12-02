@@ -1,17 +1,11 @@
+import numpy as np
 vals = open("data/day2.txt").readlines()
 
-# Part 1
-horizontal = 0
-vertical = 0
-for line in vals:
-    value = int(line.split(" ")[1])
-    if line.startswith("forward"):
-        horizontal += value
-    elif line.startswith("up"):
-        vertical -= value
-    elif line.startswith("down"):
-        vertical += value
-print(horizontal, vertical, horizontal*vertical)
+# Part 1 as a few oneliners
+forward = sum(list(map(lambda x: int(x[7:]), filter(lambda x: x.startswith("forward"), vals))))
+up = sum(list(map(lambda x: int(x[2:]), filter(lambda x: x.startswith("up"), vals))))
+down = sum(list(map(lambda x: int(x[4:]), filter(lambda x: x.startswith("down"), vals))))
+print(forward*(down-up))
 
 # Part 2
 horizontal = 0
