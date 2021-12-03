@@ -2,9 +2,9 @@ import numpy as np
 vals = open("data/day2.txt").readlines()
 
 # Part 1 as a few oneliners
-forward = sum(list(map(lambda x: int(x[7:]), filter(lambda x: x.startswith("forward"), vals))))
-up = sum(list(map(lambda x: int(x[2:]), filter(lambda x: x.startswith("up"), vals))))
-down = sum(list(map(lambda x: int(x[4:]), filter(lambda x: x.startswith("down"), vals))))
+forward = sum(map(lambda x: int(x[7:]), filter(lambda x: x.startswith("forward"), vals)))
+up = sum(map(lambda x: int(x[2:]), filter(lambda x: x.startswith("up"), vals)))
+down = sum(map(lambda x: int(x[4:]), filter(lambda x: x.startswith("down"), vals)))
 print(forward*(down-up))
 
 # Part 2
