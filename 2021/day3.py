@@ -7,8 +7,8 @@ for i in range(siz):
     bit += max(["0","1"], key=list(focus_area).count)
 
 gamma = int(bit, 2)
-# Not op
 epsilon = (1 << siz) - 1 - gamma
+#Part 1
 print(gamma*epsilon)
 
 # Part 2
