@@ -11,7 +11,8 @@ par2 :: [Integer] -> Integer -> Integer
 par2 [x] acc = acc
 par2 (x:y:z:w:xss) acc 
     | x+y+z < y+z+w = par2 (y:z:w:xss) acc+1
-    | otherwise = par2 (z:w:xss) acc
+    | otherwise = par2 (y:z:w:xss) acc
+par2 (x:xss) acc = acc
 
 main :: IO()
 main = do

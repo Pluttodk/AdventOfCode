@@ -17,6 +17,7 @@ def grow(lanterns, days=80):
         siz[i] = len(lanterns)
     return siz
 
+lanterns = list(map(int, open("data/day6.txt").readlines()[0].split(",")))
 # DP version
 def calc_score(day, life, cache = {}):
     idx = f"{day}-{life}"
