@@ -6,7 +6,7 @@ total_size = 0
 structure = nx.DiGraph()
 curr_folder = "/"
 for command in commands[2:]:
-    if command.strip().startswith("cd"):
+    if "command.strip().startswith("cd"):
         directory = command.split(" ")[-1].replace("\n", "")
         if directory == "..":
             curr_folder = list(structure.predecessors(curr_folder))[0]
@@ -41,11 +41,12 @@ print(total_size, scores[0][1])
 space_free = 30_000_000 - (70_000_000 - scores[0][1])
 print(space_free)
 answer = sorted(list(filter(lambda x: x[1] > space_free, scores)), key=lambda x: x[1])
-print(answer[:10])
+print(answer[0][1])
 
 
 # Plotting the graph
-# from matplotlib import pyplot as plt
-# from networkx.drawing.nx_pydot import graphviz_layout
-# nx.draw(structure, with_labels=True)
-# plt.show()
+from matplotlib import pyplot as plt
+from networkx.drawing.nx_pydot import graphviz_layout
+pos = nx.nx_agraph.pygraphviz_layout(structure, "dot")
+nx.draw(structure, pos)
+plt.show()
