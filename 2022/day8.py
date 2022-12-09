@@ -1,6 +1,7 @@
 import numpy as np
-vals = np.array(list(map(list, open("8.in", "r").read().split("\n"))))
+vals = list(map(list, open("8.in", "r").read().split("\n")))
 width, height = vals.shape
+print(vals)
 
 def check_val(i,j):
     # Inside forrest
