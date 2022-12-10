@@ -6,7 +6,7 @@ total_size = 0
 structure = nx.DiGraph()
 curr_folder = "/"
 for command in commands[2:]:
-    if "command.strip().startswith("cd"):
+    if command.strip().startswith("cd"):
         directory = command.split(" ")[-1].replace("\n", "")
         if directory == "..":
             curr_folder = list(structure.predecessors(curr_folder))[0]
