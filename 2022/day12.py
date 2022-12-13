@@ -30,6 +30,15 @@ start_node = list(zip(*np.where(locations == start)))[0]
 end_node = list(zip(*np.where(locations == end)))[0]
 print(len(nx.shortest_path(graph, f"{start_node[0]}_{start_node[1]}", f"{end_node[0]}_{end_node[1]}"))-1)
 
+# Plotting the shortest_path
+from matplotlib import pyplot as plt
+from networkx.drawing.nx_pydot import graphviz_layout
+sub_graph = nx.subgraph(graph, nx.shortest_path(graph, f"{start_node[0]}_{start_node[1]}", f"{end_node[0]}_{end_node[1]}"))
+pos = nx.nx_agraph.pygraphviz_layout(sub_graph, "dot")
+nx.draw(sub_graph, pos)
+plt.show()
+
+
 # Part 2
 shortest_route = []
 start_node = list(zip(*np.where(locations == start)))
@@ -42,10 +51,3 @@ for s in start_node:
     except:
         continue
 print(sorted(shortest_route)[0])
-
-# Plotting the graph
-# from matplotlib import pyplot as plt
-# from networkx.drawing.nx_pydot import graphviz_layout
-# pos = nx.nx_agraph.pygraphviz_layout(graph, "dot")
-# nx.draw(graph, pos, with_labels=True)
-# plt.show()
