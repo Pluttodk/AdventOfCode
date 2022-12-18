@@ -50,4 +50,4 @@ while pq != []:
             if new_cost < old_cost:
                 pq.append((new_cost, name))
                 D[name] = new_cost
-print("Part 1: ", D[f"{len(vals)-1}-{len(vals[0])-1}"])
+print("Part 1: ", D[f"{len(vals)-1}-{len(vals[0])-1}"])dd
