@@ -1,2 +1,6 @@
 # AdventOfCode
-After having participated for 2 years semi efficient, I will try this year to be more consisten with Advent of Code
+You know the good old  [Advent of Code](https://adventofcode.com). 
+These contains all my solutions across multiple years.
+
+### IMPORTANT!
+Quality may vary
