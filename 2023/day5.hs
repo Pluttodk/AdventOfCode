@@ -4,43 +4,19 @@ import qualified Data.Text.IO as TIO
 import Data.Map (Map)
 import qualified Data.Map as Map
 
+-- Data types used
 data Shifted = Shifted {
     original:: Int,
     shifted:: Int,
     amount:: Int
 } deriving (Show)
 
--- Create data type of a source (String), destination (String), and three [Int]s
 data Instruction = Instruction { source :: T.Text
                                , destination :: T.Text
                                , spans :: [Shifted]
                                } deriving (Show)
 
-findValue :: Int -> Shifted -> Int
-findValue val (Shifted original shifted amount)
-    | val < original+amount && val >= original = shifted + (val-original)
-    | otherwise = val
-
-findShifted :: Int -> [Shifted] -> Int
-findShifted val [] = val
-findShifted val (x:xs) 
-    | nextValue == val = findShifted val xs
-    | otherwise = findValue val x
-    where 
-        nextValue = findValue val x
-
--- Convert lines of "Start ActualValue Iterations" to override spans
--- 50 98 2 => [49, 98, 99, 52]
-overrideSpans :: T.Text -> [Int] -> [Int]
-overrideSpans x oldSpan = take (start) oldSpan ++ values ++ tailOldSpan
-    where
-        digits = map (\x -> read (T.unpack x)) (T.splitOn " " x)
-        actualValue = digits !! 0
-        start = digits !! 1
-        iterations = digits !! 2 - 1
-        values = [actualValue .. (actualValue + iterations)]
-        tailOldSpan = drop (start + iterations + 1) oldSpan
-
+-- Parsing
 getShifted :: T.Text -> Shifted
 getShifted x = Shifted original shifted amount
     where
@@ -49,14 +25,13 @@ getShifted x = Shifted original shifted amount
         shifted = digits !! 0
         amount = digits !! 2
 
--- Convert lines to spans
 convertSpans :: [T.Text] -> [Shifted] -> [Shifted]
 convertSpans [] acc = acc
 convertSpans (x:xs) acc = getShifted x:(convertSpans xs acc)
 
 ordersSplit :: [T.Text] -> [T.Text] -> [Instruction]
 ordersSplit top acc
-    | top == [] = [Instruction sourceName destName instructionSpan]
+    | null top = [Instruction sourceName destName instructionSpan]
     | x == "" = Instruction sourceName destName instructionSpan:ordersSplit xs []
     | otherwise = ordersSplit xs (acc++[x])
     where 
@@ -73,30 +48,68 @@ splitSeedsAndInstruction (a:b:xs) = (a, xs)
 createMap :: [Instruction] -> Map T.Text Instruction
 createMap instructions = Map.fromList [(source x, x) | x <- instructions]
 
+
+-- Part 1:
+findValue :: Int -> Shifted -> Int
+findValue val (Shifted original shifted amount)
+    | val < original+amount && val >= original = shifted + (val-original)
+    | otherwise = val
+
+findShifted :: Int -> [Shifted] -> Int
+findShifted val [] = val
+findShifted val (x:xs) 
+    | nextValue == val = findShifted val xs
+    | otherwise = findValue val x
+    where 
+        nextValue = findValue val x
+
 fetchSeeds :: T.Text -> [Int]
 fetchSeeds line = map (\x -> read (T.unpack x)) (T.splitOn " " digits)
     where digits = T.splitOn ": " line !! 1
 
+genericSolution :: T.Text -> Int -> Map T.Text Instruction -> Instruction -> Int
+genericSolution stopID seed instructionMap instruction
+    | destination instruction == stopID = nextSeed
+    | otherwise = genericSolution stopID nextSeed instructionMap (instructionMap Map.! destination instruction)
+        where
+            nextSeed = findShifted seed (spans instruction)
+
 part1Sol :: Int -> Map T.Text Instruction -> Instruction -> Int
-part1Sol seed instructionMap instruction
-    | destination instruction == "location" = nextSeed
-    | otherwise = part1Sol nextSeed instructionMap (instructionMap Map.! destination instruction)
-        where
-            nextSeed = findShifted seed (spans instruction)
+part1Sol = genericSolution "location"
 
-getSeedsPart2 :: [Int] -> [[Int]]
-getSeedsPart2 [] = []
-getSeedsPart2 (a:b:xs) = [a..a+b-1]:(getSeedsPart2 xs)
 
-part1WithMemory :: Int -> Map T.Text Instruction -> Instruction -> Map Int (Map T.Text Int) -> (Int, Map Int (Map T.Text Int))
-part1WithMemory seed instructionMap instruction memory
-    | Map.member seed memory && Map.member (destination instruction) (memory Map.! seed) = ((memory Map.! seed) Map.! (destination instruction), memory)
-    | destination instruction == "location" = (nextSeed, memory)
-    | otherwise = part1WithMemory nextSeed instructionMap (instructionMap Map.! destination instruction) newMemory
-        where
-            nextSeed = findShifted seed (spans instruction)
-            newMemory = Map.insert seed (Map.insert (destination instruction) nextSeed (memory Map.! seed)) memory
+-- Part 2: We reverse the search and go from location to seed and see if those are within our seed span
 
+reverseShifted :: [Shifted] -> [Shifted]
+reverseShifted [] = []
+reverseShifted ((Shifted org shift amoun):xs) = Shifted shift org amoun:reverseShifted xs
+
+reverseInstruction :: [Instruction] -> [Instruction]
+reverseInstruction [] = []
+reverseInstruction ((Instruction s d span):xs) = Instruction d s (reverseShifted span):reverseInstruction xs
+
+reverseInteractionMap :: [Instruction] -> Map T.Text Instruction
+reverseInteractionMap instructions = Map.fromList [(source x, x) | x <- instructions]
+
+part2Sol :: Int -> Map T.Text Instruction -> Instruction -> Int
+part2Sol = genericSolution "seed"
+
+isValidPart2 :: Int -> [Int] -> Bool
+isValidPart2 val [] = False
+isValidPart2 val (start:span:rest)
+    | val < start+span && val >= start = True
+    | otherwise = isValidPart2 val rest
+
+locationValues :: Instruction -> [Int]
+locationValues (Instruction _ _ values) = concat $ getSpan values
+    where getSpan = map (\(Shifted a b c) -> [b, b+c])
+
+solveSimple :: [Int] -> [Int] -> Map T.Text Instruction -> Instruction -> Int
+solveSimple [] _ _ _ = -1
+solveSimple (x:seeds) seedValues alteredInstructionMap instruct
+    | isValidPart2 solution seedValues = x
+    | otherwise = solveSimple seeds seedValues alteredInstructionMap instruct
+        where solution = part2Sol x alteredInstructionMap (alteredInstructionMap Map.! "location")
 
 main :: IO()
 main = do
@@ -109,8 +122,9 @@ main = do
     let instructionMap = createMap orders
     let part1 = map (\x -> part1Sol x instructionMap (instructionMap Map.! "seed")) seeds
     print part1
-    print (foldr1 min part1)
-    let seedsPart2 = concat (getSeedsPart2 seeds)
-    print (length seedsPart2)
-    let part2 = map (\x -> part1Sol x instructionMap (instructionMap Map.! "seed")) seedsPart2
-    print (foldr1 min part2) 
+    print (minimum part1)
+    let revOrders = reverseInstruction orders
+    let alteredInstructionMap = reverseInteractionMap revOrders
+    let locationVals = locationValues $ alteredInstructionMap Map.! "location"
+    let part2 = solveSimple [0..] seeds alteredInstructionMap (alteredInstructionMap Map.! "location")
+    print part2
