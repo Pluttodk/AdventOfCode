@@ -37,7 +37,7 @@ main = do
     print "Part 1"
     print (product part1)
     -- Part 2
-    let part2Rounds = map (\x -> concat (map show x)) digits
+    let part2Rounds = map (concatMap show) digits
     let part2Digit = map (\x -> read x :: Int) part2Rounds
     let part2 = (head part2Digit, part2Digit !! 1)
     let lowerBounds = lowerBound part2 1
