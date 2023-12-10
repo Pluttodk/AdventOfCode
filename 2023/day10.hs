@@ -59,6 +59,21 @@ parseToInt input (((from_row, from_col, from_depth),(at_row, at_col, at_depth)):
         (nRow, nCol) = mapDirection (from_row, from_col) (at_row, at_col) value
         stillToVisit = res ++ [((at_row, at_col, at_depth),(nRow, nCol, at_depth+1))]
 
+isInside :: [[Char]] -> (Int, Int) -> [(Int, Int)] -> Bool
+isInside input (row, col) loop
+    | checkPath rightPath && checkPath leftPath = True
+    | otherwise = False
+    where 
+        width = length input - 1
+        width_inner = length (head input) - 1
+        rightPath = [(row, x) | x <- [col .. width_inner]]
+        leftPath = [(row, x) | x <- [0 .. col]]
+        checkPath path = length (filter (`elem` loop) path) `mod` 2 == 1
+
+-- part2 :: [[Char]] -> (Int, Int) -> [(Int, Int)] -> Int -> Int
+-- part2 input (row,col) loop score 
+--     | notElem (row, col) loop && isInside input (row,col) loop = 
+
 main :: IO()
 main = do
     -- Parsing
@@ -67,9 +82,12 @@ main = do
     let start = findStart vals 0 0
     let neighbors = startNeighbors vals start []
     let directions = map (start, ) neighbors
-    print (neighbors)
+    let loop = parseToInt vals directions []
     -- part 1
-    let part1 = parseToInt vals directions []
-    let bestPart = maximumBy (comparing (\(_, _, x) -> x)) part1
-    -- print part1
+    let bestPart = maximumBy (comparing (\(_, _, x) -> x)) loop
     print (bestPart)
+
+    -- part 2
+    let loopWithoutDepth = map (\(x,y,_) -> (x,y)) loop
+    print (isInside vals (4,3) loopWithoutDepth)
+    print "Done!"
