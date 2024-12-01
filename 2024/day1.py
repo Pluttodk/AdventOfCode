@@ -7,7 +7,6 @@ for low_l, low_r in zip(sorted(l), sorted(r)):
 print(dist)
 
 similarity_score = 0
-
 for li in l:
     similarity_score += li * r.count(li)
 print(similarity_score)
