@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import Data.List (nub)
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
 
@@ -38,6 +39,21 @@ findAllPoints checkValid (a:b:rs)
         rest = findAllPoints checkValid (a:rs) ++ findAllPoints checkValid (b:rs)
 findAllPoints _ _ = []
 
+-- Part 2
+moveCoordinatesAll :: ((Int, Int) -> Bool) -> (Int, Int) -> (Int, Int) -> [(Int, Int)]
+moveCoordinatesAll checkValid a b
+    | checkValid movePoint = a:b:movePoint : moveCoordinatesAll checkValid b movePoint
+    | otherwise = []
+    where movePoint = moveCoordinates a b
+
+findAllPointsP2 :: ((Int, Int) -> Bool) -> [(Int, Int)] -> [(Int, Int)]
+findAllPointsP2 checkValid (a:b:rs) = aMove ++ bMove ++ rest
+    where
+        aMove = moveCoordinatesAll checkValid a b
+        bMove = moveCoordinatesAll checkValid b a
+        rest = findAllPointsP2 checkValid (a:rs) ++ findAllPointsP2 checkValid (b:rs)
+findAllPointsP2 _ (a:rs) = [a]
+findAllPointsP2 _ _ = []
 
 main :: IO ()
 main = do
@@ -46,7 +62,10 @@ main = do
   let characters = ['0'..'9'] ++ ['a'..'z'] ++ ['A'..'Z']
   let coordinates = map (\x -> findCoordinates x (T.lines contents)) characters
   let checkValid = isValidPoint (length lines) (length (head lines))
-  let p1 = concatMap (findAllPoints checkValid) coordinates
+  let p1 = nub $ concatMap (findAllPoints checkValid) coordinates
   print coordinates
-  print p1
+  print $ length p1
   print "Part 1"
+  let p2 = nub (concatMap (findAllPointsP2 checkValid) coordinates)
+  print $ length p2
+  print "part 2"
