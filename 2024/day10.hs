@@ -2,11 +2,8 @@
 
 import Data.Char (digitToInt)
 import Data.List (group, groupBy, nub, sort, sortBy)
-import Data.Sequence qualified as Seq
-import Data.Set qualified as Set
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
-import GHC.CmmToAsm.AArch64.Instr (x0)
 
 data Direction = North | East | South | West deriving (Show, Eq)
 
@@ -57,25 +54,7 @@ findAllElementsOfIdx (x : xs) idx pos
   | x == idx = pos : findAllElementsOfIdx xs idx (pos + 1)
   | otherwise = findAllElementsOfIdx xs idx (pos + 1)
 
-bfs :: [Node] -> Int -> Int -> Bool
-bfs nodes start end = bfs' (Seq.singleton start) Set.empty
-  where
-    nodeMap = map (\node -> (location node, node)) nodes
-    nodeLookup loc = lookup loc nodeMap
-    bfs' Seq.Empty _ = False
-    bfs' (current Seq.:<| queue) visited
-      | current == end = True
-      | current `Set.member` visited = bfs' queue visited
-      | otherwise = case nodeLookup current of
-          Nothing -> bfs' queue visited
-          Just node -> bfs' (queue Seq.>< Seq.fromList (adjacent node)) (Set.insert current visited)
-
-part1 :: [Node] -> Int -> [Int] -> Int
-part1 _ _ [] = 0
-part1 nodes start (end : ys)
-  | bfs nodes start end = 1 + part1 nodes start ys
-  | otherwise = part1 nodes start ys
-
+-- Good old classic DFS. Finds all path from a zero to a nine
 findAllAdjecent :: [Node] -> Int -> [Int] -> [Int]
 findAllAdjecent nodes loc acc
   | null (adjacent (nodes !! loc)) && value (nodes !! loc) == 9 = acc ++ [loc]
@@ -92,12 +71,15 @@ main = do
   let nodes = convertBoardToNode boardAsDigit 0 (width, height)
   let allZeros = findAllElementsOfIdx boardAsDigit 0 0
   let allNines = findAllElementsOfIdx boardAsDigit 9 0
-  let p1 = map (\x -> part1 nodes x allNines) allZeros
-  print p1
-  print $ sum p1
+  let allPath = map (\x -> findAllAdjecent nodes x []) allZeros
+
+  -- For each path count the number of allNines that are
+  let doesNineExist = map (\x -> sum $ map (\y -> if y `elem` x then 1 else 0) allNines) allPath :: [Int]
+  --   let p1 = map (\x )
+  print doesNineExist
+  print $ sum doesNineExist
   print "Part 1"
 
-  let allPath = map (\x -> findAllAdjecent nodes x []) allZeros
   let allNodes = map (map (nodes !!)) allPath
   let sortedNodes = map (sortBy (\a b -> compare (location a) (location b))) allNodes
   let groupedNodes = map (groupBy (\a b -> location a == location b)) sortedNodes
