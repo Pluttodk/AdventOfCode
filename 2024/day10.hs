@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Data.Char (digitToInt)
-import Data.List (nub)
+import Data.List (group, groupBy, nub, sort, sortBy)
 import Data.Sequence qualified as Seq
 import Data.Set qualified as Set
 import Data.Text qualified as T
@@ -76,10 +76,11 @@ part1 nodes start (end : ys)
   | bfs nodes start end = 1 + part1 nodes start ys
   | otherwise = part1 nodes start ys
 
-findAllAdjecent :: [Node] -> Int -> [Int]
-findAllAdjecent nodes loc
+findAllAdjecent :: [Node] -> Int -> [Int] -> [Int]
+findAllAdjecent nodes loc acc
+  | null (adjacent (nodes !! loc)) && value (nodes !! loc) == 9 = acc ++ [loc]
   | null (adjacent (nodes !! loc)) = []
-  | otherwise = adjacent (nodes !! loc) ++ concatMap (findAllAdjecent nodes) (adjacent (nodes !! loc))
+  | otherwise = concatMap (\x -> findAllAdjecent nodes x (acc ++ [loc])) (adjacent (nodes !! loc))
 
 main :: IO ()
 main = do
@@ -92,13 +93,15 @@ main = do
   let allZeros = findAllElementsOfIdx boardAsDigit 0 0
   let allNines = findAllElementsOfIdx boardAsDigit 9 0
   let p1 = map (\x -> part1 nodes x allNines) allZeros
-  --   let possibleNodes = map (nodes !!) (findAllAdjecent nodes (allZeros !! 8))
-  --   let filteredNodes = map (\x -> convertDigitToXY (location x) (width, height)) possibleNodes
-  --   print (nub filteredNodes)
-
-  --   print nodes
-  --   print allZeros
-  --   print allNines
   print p1
   print $ sum p1
   print "Part 1"
+
+  let allPath = map (\x -> findAllAdjecent nodes x []) allZeros
+  let allNodes = map (map (nodes !!)) allPath
+  let sortedNodes = map (sortBy (\a b -> compare (location a) (location b))) allNodes
+  let groupedNodes = map (groupBy (\a b -> location a == location b)) sortedNodes
+  let largestGroup = map (maximum . map length) groupedNodes
+  print largestGroup
+  print $ sum largestGroup
+  print "Part 2"
