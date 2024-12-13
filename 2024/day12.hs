@@ -1,7 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use lambda-case" #-}
 
 import Data.Char (digitToInt)
-import Data.List (group, groupBy, nub, nubBy, sort, sortBy)
+import Data.List (find, group, groupBy, nub, nubBy, sort, sortBy)
 import Data.Set (Set)
 import Data.Set qualified as Set
 import Data.Text qualified as T
@@ -110,14 +113,16 @@ calcDegrees org width height from current to
   | from == to = 0
   | directionFrom == directionTo = 0
   | directionFrom == opposite directionTo = 0
-  | (directionFrom == turn90Degree directionTo || directionFrom == turn270Degree directionTo) && not (null allInSquare) = 1
+  | (directionFrom == turn90Degree directionTo || directionFrom == turn270Degree directionTo) && hasLoop = 1
   | directionFrom == turn90Degree directionTo || directionFrom == turn270Degree directionTo = 2
   | otherwise = 0
   where
     directionFrom = calcDirection width from current
     directionTo = calcDirection width current to
-    squareMove = calculateSquare directionFrom directionTo
-    allInSquare = filter (from ==) (adjacent (org !! move width to squareMove))
+    doubleMove = move width (move width current directionFrom) directionTo
+    toAdj = adjacent (org !! to)
+    fromAdj = adjacent (org !! current)
+    hasLoop = any (\x -> x `elem` toAdj && x /= current) fromAdj
 
 moveDiagonally :: Int -> Int -> Direction -> Int
 moveDiagonally width location direction
@@ -139,6 +144,82 @@ countCorners org (n : ns) width height
   | otherwise = countCorners org ns width height
   where
     adj = adjacent n
+    loc = location n
+
+getValue :: [Node] -> Int -> Char
+getValue nodes loc = value (nodes !! loc)
+
+-- Find all nodes that have no adjecent north nodes
+findNorthNodes :: [Node] -> Int -> [Node]
+findNorthNodes nodes width = filter (\x -> not (any (\y -> y == move width (location x) North) (adjacent x))) nodes
+
+updateAdjWithOnlyNodes :: [Node] -> [Int] -> [Node]
+updateAdjWithOnlyNodes [] _ = []
+updateAdjWithOnlyNodes (n : ns) onlyNodes = Node (location n) adjInOnlyNodes (value n) : updateAdjWithOnlyNodes ns onlyNodes
+  where
+    adjInOnlyNodes = filter (`elem` onlyNodes) (adjacent n)
+
+findSouthNodes :: [Node] -> Int -> [Node]
+findSouthNodes nodes width = filter (\x -> not (any (\y -> y == move width (location x) South) (adjacent x))) nodes
+
+findEastNodes :: [Node] -> Int -> [Node]
+findEastNodes nodes width = filter (\x -> not (any (\y -> y == move width (location x) East) (adjacent x))) nodes
+
+findWestNodes :: [Node] -> Int -> [Node]
+findWestNodes nodes width = filter (\x -> not (any (\y -> y == move width (location x) West) (adjacent x))) nodes
+
+findAllUniqueYs :: [Node] -> Int -> [Int]
+findAllUniqueYs nodes width = nub $ map ((\x -> snd (convertDigitToXY x (width, length nodes))) . location) nodes
+
+findAllUniqueXs :: [Node] -> Int -> [Int]
+findAllUniqueXs nodes width = nub $ map ((\x -> fst (convertDigitToXY x (width, length nodes))) . location) nodes
+
+findAllUniqueNorthFacingSides :: [Node] -> Int -> Int
+findAllUniqueNorthFacingSides nodes width = do
+  let allNorth = findNorthNodes nodes width
+  let newNodes = updateAdjWithOnlyNodes allNorth (map location allNorth)
+  let newLocations = map location newNodes
+  let fillEmptyNewNodes = [if x `elem` newLocations then find (\y -> location y == x) newNodes else Just (Node (x) [] ' ') | x <- [0 .. (maximum newLocations)]]
+  let removeMaybe = map (\x -> case x of Just y -> y; Nothing -> Node 0 [] ' ') fillEmptyNewNodes
+  let p2 = groupNodes removeMaybe removeMaybe Set.empty
+  let removeValueEmpty = filter (not . null) $ map (filter (\y -> value y /= ' ')) p2
+  length removeValueEmpty
+
+findAllUniqueSouthFacingSides :: [Node] -> Int -> Int
+findAllUniqueSouthFacingSides nodes width = do
+  let allSouth = findSouthNodes nodes width
+  let newNodes = updateAdjWithOnlyNodes allSouth (map location allSouth)
+  let newLocations = map location newNodes
+  let fillEmptyNewNodes = [if x `elem` newLocations then find (\y -> location y == x) newNodes else Just (Node (x) [] ' ') | x <- [0 .. (maximum newLocations)]]
+  let removeMaybe = map (\x -> case x of Just y -> y; Nothing -> Node 0 [] ' ') fillEmptyNewNodes
+  let p2 = groupNodes removeMaybe removeMaybe Set.empty
+  let removeValueEmpty = filter (not . null) $ map (filter (\y -> value y /= ' ')) p2
+  length removeValueEmpty
+
+findAllUniqueEastFacingSides :: [Node] -> Int -> Int
+findAllUniqueEastFacingSides nodes width = do
+  let allEast = findEastNodes nodes width
+  let newNodes = updateAdjWithOnlyNodes allEast (map location allEast)
+  let newLocations = map location newNodes
+  let fillEmptyNewNodes = [if x `elem` newLocations then find (\y -> location y == x) newNodes else Just (Node (x) [] ' ') | x <- [0 .. (maximum newLocations)]]
+  let removeMaybe = map (\x -> case x of Just y -> y; Nothing -> Node 0 [] ' ') fillEmptyNewNodes
+  let p2 = groupNodes removeMaybe removeMaybe Set.empty
+  let removeValueEmpty = filter (not . null) $ map (filter (\y -> value y /= ' ')) p2
+  length removeValueEmpty
+
+findAllUniqueWestFacingSides :: [Node] -> Int -> Int
+findAllUniqueWestFacingSides nodes width = do
+  let allWest = findWestNodes nodes width
+  let newNodes = updateAdjWithOnlyNodes allWest (map location allWest)
+  let newLocations = map location newNodes
+  let fillEmptyNewNodes = [if x `elem` newLocations then find (\y -> location y == x) newNodes else Just (Node (x) [] ' ') | x <- [0 .. (maximum newLocations)]]
+  let removeMaybe = map (\x -> case x of Just y -> y; Nothing -> Node 0 [] ' ') fillEmptyNewNodes
+  let p2 = groupNodes removeMaybe removeMaybe Set.empty
+  let removeValueEmpty = filter (not . null) $ map (filter (\y -> value y /= ' ')) p2
+  length removeValueEmpty
+
+findAllUniqueSides :: Int -> [Node] -> Int
+findAllUniqueSides width n = findAllUniqueNorthFacingSides n width + findAllUniqueSouthFacingSides n width + findAllUniqueEastFacingSides n width + findAllUniqueWestFacingSides n width
 
 main :: IO ()
 main = do
@@ -185,8 +266,16 @@ main = do
   --   print squareMove
   --   let allInSquare = filter (from ==) (adjacent (nodes !! move width to squareMove))
   --   print allInSquare
-
-  let p2 = map (\x -> (countCorners nodes x width height)) grouped
+  -- let allNorth = findNorthNodes (grouped !! 0) width
+  -- let newNodes = updateAdjWithOnlyNodes allNorth (map location allNorth)
+  -- let newLocations = map location newNodes
+  -- let fillEmptyNewNodes = [if x `elem` newLocations then find (\y -> location y == x) newNodes else Just (Node (x) [] ' ') | x <- [0 .. (maximum newLocations)]]
+  -- let removeMaybe = map (\x -> case x of Just y -> y; Nothing -> Node 0 [] ' ') fillEmptyNewNodes
+  -- let p2 = groupNodes removeMaybe removeMaybe Set.empty
+  -- let removeValueEmpty = filter (not . null) $ map (filter (\y -> value y /= ' ')) p2
+  -- print removeValueEmpty
+  -- print $ length removeValueEmpty
+  let p2 = map (\x -> findAllUniqueSides width x * length x) grouped
   print p2
   print $ sum p2
   print "Part 2"
